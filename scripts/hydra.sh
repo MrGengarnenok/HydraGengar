@@ -1,15 +1,25 @@
 #!/bin/bash
 
+# Укажите путь к вашему репозиторию
+REPO_URL="https://github.com/MrGengarnenok/HydraGengar"
+REPO_DIR="/tmp/HydraGengar"
+
 # Функция для проверки обновлений
 check_updates() {
     echo "Проверка обновлений..."
-    git -C /path/to/your/repo fetch
-    LOCAL=$(git -C /path/to/your/repo rev-parse @)
-    REMOTE=$(git -C /path/to/your/repo rev-parse origin/main)
+    if [ ! -d "$REPO_DIR" ]; then
+        git clone "$REPO_URL" "$REPO_DIR"
+    else
+        git -C "$REPO_DIR" fetch
+    fi
+    
+    LOCAL=$(git -C "$REPO_DIR" rev-parse @)
+    REMOTE=$(git -C "$REPO_DIR" rev-parse origin/main)
 
-    if [ $LOCAL != $REMOTE ]; then
+    if [ "$LOCAL" != "$REMOTE" ]; then
         echo "Есть обновления в репозитории."
-        # Здесь можно добавить логику для обновления
+        echo "Обновляем репозиторий..."
+        git -C "$REPO_DIR" pull
     else
         echo "Репозиторий обновлен."
     fi
