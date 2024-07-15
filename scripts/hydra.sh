@@ -25,56 +25,148 @@ check_updates() {
     fi
 }
 
-# Функция для проверки безопасности сети
-check_network_security() {
-    local ssid="$1"
-    echo "Проверка сети: $ssid"
+# Функции Hydra
+hydra_menu() {
+    echo "Выберите действие для Hydra:"
+    echo "1) Выполнить атаку на логин"
+    echo "2) Вернуться в главное меню"
+    read -p "Введите номер вашего выбора: " hydra_choice
 
-    if [[ "$ssid" == *"WPA"* || "$ssid" == *"WPA2"* ]]; then
-        echo "Сеть $ssid безопасная."
-        return 0
-    else
-        echo "Сеть $ssid небезопасная."
-        return 1
-    fi
+    case $hydra_choice in
+        1)
+            read -p "Введите цель (IP или домен): " target
+            read -p "Введите сервис (например, http, ftp): " service
+            read -p "Введите имя пользователя: " username
+            read -p "Введите путь к файлу со списком паролей: " password_list
+            echo "Выполнение атаки на $target с помощью Hydra..."
+            hydra -l "$username" -P "$password_list" "$target" "$service"
+            ;;
+        2)
+            main_menu
+            ;;
+        *)
+            echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
+            hydra_menu
+            ;;
+    esac
 }
 
-# Функция для сканирования уязвимостей
-scan_vulnerabilities() {
-    local ip="$1"
-    echo "Сканирование уязвимостей для IP: $ip"
-    nmap -sV --script=vuln "$ip"
+# Функции nmap
+nmap_menu() {
+    echo "Выберите действие для nmap:"
+    echo "1) Полное сканирование портов"
+    echo "2) Сканировать уязвимости"
+    echo "3) Узнать устройства в сети"
+    echo "4) Получить информацию об устройстве"
+    echo "5) Вернуться в главное меню"
+    read -p "Введите номер вашего выбора: " nmap_choice
+
+    case $nmap_choice in
+        1)
+            read -p "Введите IP-адрес: " ip
+            echo "Полное сканирование портов для IP: $ip"
+            nmap -p- "$ip"
+            ;;
+        2)
+            read -p "Введите IP-адрес: " ip
+            scan_vulnerabilities "$ip"
+            ;;
+        3)
+            read -p "Введите IP-адрес вашей сети: " ip
+            discover_devices "$ip"
+            ;;
+        4)
+            read -p "Введите IP-адрес устройства: " ip
+            get_device_info "$ip"
+            ;;
+        5)
+            main_menu
+            ;;
+        *)
+            echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
+            nmap_menu
+            ;;
+    esac
 }
 
-# Функция для получения списка устройств в сети
-discover_devices() {
-    local ip="$1"
-    echo "Сканирование устройств в сети..."
-    nmap -sn "$ip/24"
+# Функции aircrack-ng
+aircrack_menu() {
+    echo "Выберите действие для aircrack-ng:"
+    echo "1) Сканировать доступные сети"
+    echo "2) Захватить трафик"
+    echo "3) Атаковать сеть"
+    echo "4) Вернуться в главное меню"
+    read -p "Введите номер вашего выбора: " aircrack_choice
+
+    case $aircrack_choice in
+        1)
+            echo "Сканируем сети..."
+            networks=$(nmcli -t -f SSID dev wifi)
+
+            if [[ -z "$networks" ]]; then
+                echo "Нет доступных сетей."
+                exit 1
+            fi
+
+            for ssid in $networks; do
+                echo "Найдена сеть: $ssid"
+            done
+            ;;
+        2)
+            read -p "Введите интерфейс для захвата (например, wlan0): " iface
+            read -p "Введите имя файла для сохранения: " filename
+            echo "Начало захвата трафика..."
+            airodump-ng -w "$filename" "$iface"
+            ;;
+        3)
+            read -p "Введите BSSID цели: " bssid
+            read -p "Введите имя файла с захваченным трафиком: " filename
+            echo "Выполнение атаки на сеть..."
+            aircrack-ng -b "$bssid" "$filename"
+            ;;
+        4)
+            main_menu
+            ;;
+        *)
+            echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
+            aircrack_menu
+            ;;
+    esac
 }
 
-# Функция для выполнения атаки на логин с помощью Hydra
-perform_hydra_attack() {
-    local target="$1"
-    local service="$2"
-    local username="$3"
-    local password_list="$4"
-    echo "Выполнение атаки на $target с помощью Hydra..."
-    hydra -l "$username" -P "$password_list" "$target" "$service"
-}
+# Функции Metasploit
+metasploit_menu() {
+    echo "Выберите действие для Metasploit:"
+    echo "1) Запустить Metasploit консоль"
+    echo "2) Провести сканирование уязвимостей"
+    echo "3) Эксплуатировать уязвимость"
+    echo "4) Вернуться в главное меню"
+    read -p "Введите номер вашего выбора: " metasploit_choice
 
-# Функция для полного сканирования портов с nmap
-full_port_scan() {
-    local ip="$1"
-    echo "Полное сканирование портов для IP: $ip"
-    nmap -p- "$ip"
-}
-
-# Функция для получения информации об устройстве по IP
-get_device_info() {
-    local ip="$1"
-    echo "Получение информации об устройстве с IP: $ip"
-    nmap -A "$ip"
+    case $metasploit_choice in
+        1)
+            echo "Запуск Metasploit консоли..."
+            msfconsole
+            ;;
+        2)
+            read -p "Введите IP-адрес цели: " ip
+            echo "Проведение сканирования уязвимостей с Metasploit..."
+            msfconsole -q -x "db_nmap -sV $ip; exit"
+            ;;
+        3)
+            read -p "Введите путь к эксплоиту: " exploit
+            read -p "Введите IP-адрес цели: " ip
+            echo "Эксплуатация уязвимости..."
+            msfconsole -q -x "use $exploit; set RHOST $ip; exploit; exit"
+            ;;
+        4)
+            main_menu
+            ;;
+        *)
+            echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
+            metasploit_menu
+            ;;
+    esac
 }
 
 # ASCII-арт для заголовка с драконом и логотипом Kali Linux
@@ -92,64 +184,38 @@ echo -e "\e[0m"
 # Проверка обновлений перед показом меню
 check_updates
 
-# Меню выбора действия
-echo "Выберите действие:"
-echo "1) Проверить доступные сети"
-echo "2) Сканировать уязвимости"
-echo "3) Узнать устройства в сети"
-echo "4) Выполнить атаку с помощью Hydra"
-echo "5) Полное сканирование портов"
-echo "6) Получить информацию об устройстве"
-echo "7) Выйти"
+# Главное меню
+main_menu() {
+    echo "Выберите категорию:"
+    echo "1) Функции Hydra"
+    echo "2) Функции nmap"
+    echo "3) Функции aircrack-ng"
+    echo "4) Функции Metasploit"
+    echo "5) Выйти"
+    read -p "Введите номер вашего выбора: " main_choice
 
-read -p "Введите номер вашего выбора: " choice
+    case $main_choice in
+        1)
+            hydra_menu
+            ;;
+        2)
+            nmap_menu
+            ;;
+        3)
+            aircrack_menu
+            ;;
+        4)
+            metasploit_menu
+            ;;
+        5)
+            echo "Выход из программы."
+            exit 0
+            ;;
+        *)
+            echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
+            main_menu
+            ;;
+    esac
+}
 
-case $choice in
-    1)
-        echo "Сканируем сети..."
-        networks=$(nmcli -t -f SSID dev wifi)
-
-        if [[ -z "$networks" ]]; then
-            echo "Нет доступных сетей."
-            exit 1
-        fi
-
-        for ssid in $networks; do
-            if check_network_security "$ssid"; then
-                echo "Подключаемся к $ssid..."
-                nmcli dev wifi connect "$ssid"
-                break
-            fi
-        done
-        ;;
-    2)
-        ip=$(hostname -I | awk '{print $1}')
-        scan_vulnerabilities "$ip"
-        ;;
-    3)
-        ip=$(hostname -I | awk '{print $1}')
-        discover_devices "$ip"
-        ;;
-    4)
-        read -p "Введите цель (IP или домен): " target
-        read -p "Введите сервис (например, http, ftp): " service
-        read -p "Введите имя пользователя: " username
-        read -p "Введите путь к файлу со списком паролей: " password_list
-        perform_hydra_attack "$target" "$service" "$username" "$password_list"
-        ;;
-    5)
-        ip=$(hostname -I | awk '{print $1}')
-        full_port_scan "$ip"
-        ;;
-    6)
-        read -p "Введите IP-адрес устройства: " device_ip
-        get_device_info "$device_ip"
-        ;;
-    7)
-        echo "Выход из программы."
-        exit 0
-        ;;
-    *)
-        echo "Неверный выбор. Пожалуйста, попробуйте еще раз."
-        ;;
-esac
+main_menu
